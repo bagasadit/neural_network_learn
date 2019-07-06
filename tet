@@ -1,0 +1,9 @@
+export_tflite_ssd_graph.py --pipeline_config_path=training/ssd_mobilenet_v2_coco.config --trained_checkpoint_prefix=training/model.ckpt-18797 --output_directory=inference_graph --add_postprocessing_op=true
+
+bazel run -c=opt $HOME/tensor1/tensorflow/tensorflow/lite/toco:toco -- --input_file=models/research/object_detection/inference_graph/tflite_graph.pb --output_file=models/research/object_detection/inference_graph/detect.tflite --input_shapes=1,300,300,3 --input_arrays=normalized_input_image_tensor --output_arrays='TFLite_Detection_PostProcess','TFLite_Detection_PostProcess:1','TFLite_Detection_PostProcess:2','TFLite_Detection_PostProcess:3' --inference_type=QUANTIZED_UINT8 --mean_values=128 --std_values=128 --change_concat_input_ranges=false --allow_custom_ops
+
+tflite_convert --graph_def_file=inference_graph/tflite_graph.pb --output_file=inference_graph/detect.tflite --output_format=TFLITE --input_arrays=normalized_input_image_tensor --output_arrays='TFLite_Detection_PostProcess','TFLite_Detection_PostProcess:1','TFLite_Detection_PostProcess:2','TFLite_Detection_PostProcess:3' --inference_type=QUANTIZED_UINT8 --allow_custom_ops --input_shapes=1,300,300,3 --std_dev_values=128 --mean_values=128 --default_ranges_min=0 --default_ranges_max=255
+
+python eval.py --logtostderr --train_dir=training/ --pipeline_config_path=training/ssd_mobilenet_v2_coco.config --checkpoint_dir=training/ --eval_dir=training/
+
+python model_main.py --logtostderr --model_dir=training/ --pipeline_config_path=training/ssd_mobilenet_v2_coco.config
